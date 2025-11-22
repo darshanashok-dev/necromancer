@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Repository {
+  id          String   @id @default(uuid())
+  url         String
+  name        String
+  owner       String?
+  language    String?
+  framework   String?
+  uploadedAt  DateTime @default(now())
+  status      String   @default("analyzing")
+  
+  autopsy     Autopsy?
+  revival     Revival?
+  soul        Soul?
+  
+  @@map("repositories")
+}
+
+model Autopsy {
+  id           String   @id @default(uuid())
+  repositoryId String   @unique
+  report       Json
+  createdAt    DateTime @default(now())
+  
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  revival      Revival?
+  soul         Soul?
+  
+  @@map("autopsies")
+}
+
+model Revival {
+  id           String   @id @default(uuid())
+  autopsyId    String   @unique
+  repositoryId String   @unique
+  report       Json
+  prUrl        String?
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+  
+  autopsy      Autopsy    @relation(fields: [autopsyId], references: [id], onDelete: Cascade)
+  repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  
+  @@map("revivals")
+}
+
+model Soul {
+  id            String   @id @default(uuid())
+  autopsyId     String   @unique
+  repositoryId  String   @unique
+  spec          Json
+  createdAt     DateTime @default(now())
+  
+  autopsy       Autopsy        @relation(fields: [autopsyId], references: [id], onDelete: Cascade)
+  repository    Repository     @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  resurrections Resurrection[]
+  
+  @@map("souls")
+}
+
+model Resurrection {
+  id            String   @id @default(uuid())
+  soulId        String
+  targetStack   String
+  config        Json
+  artifactUrl   String?
+  githubRepoUrl String?
+  status        String   @default("pending")
+  createdAt     DateTime @default(now())
+  
+  soul          Soul @relation(fields: [soulId], references: [id], onDelete: Cascade)
+  
+  @@map("resurrections")
+}
